@@ -30,9 +30,6 @@
    pip install -r requirements.txt
    ```
 
-```vscode
-API_KEY=your_google_genai_api_key
-```
 
 Set your API_KEY for Google GenAI in a `.env` file:
 
