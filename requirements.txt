@@ -1,0 +1,10 @@
+colorama
+requests
+beautifulsoup4
+python-dotenv
+google-genai
+setuptools
+torch
+numpy
+pyamdgpuinfo
+wmi
