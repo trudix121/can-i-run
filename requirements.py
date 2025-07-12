@@ -16,7 +16,7 @@ def get_cpu_cores(cpu):
     
     # Trimitem curățat la model
     response = ai.models.generate_content(
-        model="gemma-3n-e2b-it",
+        model="gemma-3n-e4b-it",
         contents=(
             f"Extract **only the number of CPU cores** from the following CPU model name(s):\n\n"
             f"Input: '{cpu_clean}'\n\n"
@@ -48,7 +48,7 @@ def get_cpu_freq(cpu):
     
     # Trimitem curățat la model
     response = ai.models.generate_content(
-        model="gemma-3n-e2b-it",
+        model="gemma-3n-e4b-it",
         contents=(
             f"Extract **only the numeric frequency in GHz** from the following CPU model name(s):\n\n"
             f"Input: '{cpu_clean}'\n\n"
@@ -77,13 +77,11 @@ def get_cpu_freq(cpu):
 
 
 def get_gpu_memory(gpu):
-    response = ai.models.generate_content(
-    model="gemma-3n-e2b-it",
-    contents=(
+    prompt = (
         "Extract **only the numeric memory size** of the GPU model provided as input.\n\n"
         "Rules:\n"
-        "1. Return **only the number**, without any units (e.g., '6', not '6GB').\n"
-        "2. If a **frequency (e.g., MHz)** is specified instead of memory, return that number.\n"
+        "1. Return **only the number**, without any units.\n"
+        "2. If a **frequency (e.g., MHz)** is specified instead of memory, return 'None'.\n"
         "3. If the input is **not a GPU**, return 'None'.\n"
         "4. If the **memory is specified**, return that number.\n"
         "5. If **multiple GPUs** are listed, return the **lowest memory amount** (only one number).\n\n"
@@ -93,20 +91,24 @@ def get_gpu_memory(gpu):
         "* arc a380 → None\n"
         "* intel core i7 → None\n"
         "* 2x RTX 2080 Ti 11GB, 1x GTX 1050 2GB → 2\n"
-        "* geforce gtx 960, 1300 MHz → 1300\n\n"
-        "Provide only the extracted number, no explanation."
+        "* 512 MB video memory* -> 0.5\n\n"
+        f"Input: {gpu}\n"
     )
-)
 
+    response = ai.models.generate_content(
+        model="gemma-3n-e4b-it",
+        contents=prompt
+    )
 
     text = response.text.strip().lower()
-
     if 'none' in text:
         return None
 
-    match = re.search(r'(\d+)', text)
+    match = re.search(r'\d+(\.\d+)?', text)
     if match:
-        return int(match.group(1))  # sau float(...) dacă vrei și zecimale
+        val = match.group(0)
+        return float(val) if '.' in val else int(val)
+
     return None
 
     
