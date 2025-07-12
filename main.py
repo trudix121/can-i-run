@@ -11,13 +11,15 @@ class CaniRun():
         self.pc_components = []
         self.game_requirements = []
         
-    def check(self, id):
+    def check(self, id, minimum=True):
         print(f"{Fore.CYAN}🎮 Checking game compatibility...{Style.RESET_ALL}")
         print(f"{Fore.YELLOW}📊 Gathering system information...{Style.RESET_ALL}")
-        
-        self.game_requirements.append(get_requirements(id))
-        self.pc_components.append(get_components())
-        self.compare()
+        try:
+         self.game_requirements.append(get_requirements(id, minimum=True)) if minimum==True else self.game_requirements.append(get_requirements(id, minimum=False))
+         self.pc_components.append(get_components())
+        except:
+         return input(Fore.RED+'STEAM GAME ID IS NOT VALID, PLEASE RESTART THE PROGRAM AND TRY AGAIN (PRESS ENTER TO EXIT)'+Fore.RESET) 
+        self.compare(id=id)
 
     def format_value(self, value, unit=""):
         """Format values for better display"""
@@ -40,10 +42,11 @@ class CaniRun():
         except (ZeroDivisionError, TypeError):
             return 0
 
-    def print_header(self):
+    def print_header(self, game):
         """Print a nice header"""
         print("\n" + "="*60)
         print(f"{Fore.CYAN}{Style.BRIGHT}🎮 CAN I RUN THIS GAME? 🎮{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}{Style.BRIGHT} {game} {Style.RESET_ALL}")
         print("="*60)
 
     def print_component_check(self, component_name, icon, your_value, required_value, unit, passed):
@@ -113,13 +116,14 @@ class CaniRun():
         else:
             print(f"\n{Fore.RED}🎮 Game may not run properly. Consider upgrading the failed components.{Style.RESET_ALL}")
 
-    def compare(self):
+    def compare(self,id):
         """Enhanced comparison function with better UX/UI"""
-        self.print_header()
+        game_name = get_game_name(id=id)
+        self.print_header(game=game_name)
         
         # Get component values
-        pc_size, pc_cpu_freq, pc_gpu_memory, pc_ram = self.pc_components[0]
-        req_size, req_cpu_freq, req_gpu_memory, req_ram = self.game_requirements[0]
+        pc_size, pc_cpu_freq, pc_cpu_cores, pc_gpu_memory, pc_ram = self.pc_components[0]
+        req_size, req_cpu_freq,req_cpu_cores, req_gpu_memory, req_ram = self.game_requirements[0]
         
         # Check each component
         results = []
@@ -142,6 +146,15 @@ class CaniRun():
             self.get_status_icon(cpu_passed),
             pc_cpu_freq, req_cpu_freq, "MHz",
             cpu_passed
+        )
+        # CPU cores check
+        cpu_core_passed = pc_cpu_cores >= req_cpu_cores if req_cpu_cores and req_cpu_cores != 'None' else True
+        results.append({'name': 'CPU Cores', 'passed': cpu_core_passed})
+        self.print_component_check(
+            "🖥️ CPU Cores",
+            self.get_status_icon(cpu_core_passed),
+            pc_cpu_cores, req_cpu_cores, "Core/s",
+            cpu_core_passed
         )
         
         # GPU check
@@ -184,5 +197,10 @@ class CaniRun():
 
 if __name__ == '__main__':
     id = input(f"Enter the game steam id (like: 'https://store.steampowered.com/app/{Fore.RED}271590{Fore.RESET}/'):")
-    run = CaniRun()
-    run.check(id)
+    if id.isdigit():
+     requirements = int(input('Type 1 for minimum requirements or 2 for recommended requirements:'))
+     run = CaniRun()
+     run.check(id, minimum=True) if requirements == 1 else run.check(id,minimum=False)
+    else:
+        input(Fore.RED+ 'THE ID MUST BE A INTEGER! PRESS ENTER TO EXIT')
+        exit()

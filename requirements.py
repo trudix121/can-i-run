@@ -4,10 +4,43 @@ from dotenv import load_dotenv
 from google import genai
 import os
 import re
+from colorama import Fore
 load_dotenv()
 
 ai = genai.Client(api_key=os.environ['API_KEY'])
 
+
+def get_cpu_cores(cpu):
+    # Eliminăm cuvântul 'better' din input
+    cpu_clean = cpu.lower().replace("better", "").strip()
+    
+    # Trimitem curățat la model
+    response = ai.models.generate_content(
+        model="gemma-3n-e2b-it",
+        contents=(
+            f"Extract **only the number of CPU cores** from the following CPU model name(s):\n\n"
+            f"Input: '{cpu_clean}'\n\n"
+            "Rules:\n"
+            "1. Return **only the number**, no explanation, no units (e.g., '8', not '8 cores').\n"
+            "2. If the input is **not a CPU** or the **number of cores is not specified**, return 'None'.\n"
+            "3. If **multiple CPUs** are listed, return the **lowest number of cores** found.\n\n"
+            "Examples:\n"
+            "* Intel Core i7-9700K 8 cores → 8\n"
+            "* AMD Ryzen 5 5600X with 6 cores → 6\n"
+            "* Intel Core i5-8250U (4 cores) / AMD Ryzen 5 5500 (6 cores) → 6\n"
+            "* NVIDIA RTX 3080 → None\n\n"
+            "* core 2 duo -> 2"
+            "Return only the number, no explanation."
+        )
+    )
+
+    text = response.text.strip().lower()
+
+    if 'none' in text:
+        return None
+
+
+    return int(text)
 
 def get_cpu_freq(cpu):
     # Eliminăm cuvântul 'better' din input
@@ -76,12 +109,15 @@ def get_gpu_memory(gpu):
         return int(match.group(1))  # sau float(...) dacă vrei și zecimale
     return None
 
-
-
-def get_requirements(id: int):
-    url = f"https://store.steampowered.com/api/appdetails/?appids={id}&l=english"
-    res = rq.get(url=url).json()[str(id)]['data']['pc_requirements']['minimum']
     
+def get_game_name(id:int):
+    url = f"https://store.steampowered.com/api/appdetails/?appids={id}&l=english"
+    res = rq.get(url=url).json()[str(id)]['data']['name']
+    return res
+
+def get_requirements(id: int, minimum= True):
+    url = f"https://store.steampowered.com/api/appdetails/?appids={id}&l=english"
+    res = rq.get(url=url).json()[str(id)]['data']['pc_requirements']['minimum'] if minimum == True else rq.get(url=url).json()[str(id)]['data']['pc_requirements']['recommended']
     soup = BeautifulSoup(res, 'html.parser')
     fields = {}
 
@@ -124,8 +160,9 @@ def get_requirements(id: int):
     ram = int(ram_value)
     size = int(size_value)
 
-    # presupun că ai funcțiile get_cpu_freq și get_gpu_memory deja definite
+
     cpu_freq = get_cpu_freq(cpu_intel) if cpu_intel else None
     gpu_memory = get_gpu_memory(gpu_nvidia) if gpu_nvidia else None
+    cpu_cores = get_cpu_cores(cpu_intel) if cpu_intel else None
 
-    return size, cpu_freq, gpu_memory, ram
+    return size, cpu_freq, cpu_cores, gpu_memory, ram

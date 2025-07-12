@@ -83,7 +83,8 @@ def get_ram():
 
 def get_components():
     cpu_freq = psutil.cpu_freq().max / 1000
+    cpu_cores = psutil.cpu_count()
     gpu_memory = get_gpu_memory()
     size = get_memory_size()
     ram = get_ram()
-    return size, cpu_freq, gpu_memory, ram
+    return size, cpu_freq, cpu_cores, gpu_memory, ram
